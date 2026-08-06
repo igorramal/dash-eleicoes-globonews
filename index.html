@@ -225,7 +225,7 @@ function render(){
   h+=card('Engajamento',parseNum(di.engajamento),parseNum(dp.engajamento));
   h+=cardRaw('Sentimento +/−',`${di.sentimento_pos||'—'} / ${di.sentimento_neg||'—'}`);
   h+=`</div>`;
-  h+=`<h3 class="sub" style="margin-top:16px">Mídia própria (@GloboNews)</h3><div class="grid g4">`;
+  h+=`<h3 class="sub" style="margin-top:16px">Mídia própria (TV Globo, GloboNews e G1)</h3><div class="grid g4">`;
   h+=card('Posts',parseNum(t.posts),parseNum(tp.posts));
   h+=card('Interações',parseNum(t.interacoes),parseNum(tp.interacoes));
   h+=card('Views',parseNum(t.views),parseNum(tp.views));
