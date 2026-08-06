@@ -235,7 +235,7 @@ function render(){
   h+=`<div class="panel"><h3 class="sub">Interações por plataforma</h3>${
     plat.sort((a,b)=>parseNum(b.interacoes)-parseNum(a.interacoes)).map(r=>
       `<div class="bar-row"><span class="nm">${esc(r.plataforma)}</span><div class="bar-track"><div class="bar-fill" style="width:${parseNum(r.interacoes)/pmax*100}%"></div></div><span class="vl">${fmt(parseNum(r.interacoes))}</span></div>`).join('')||dim('sem dados')}</div>`;
-  h+=`<div class="panel"><h3 class="sub">Share of Voice</h3><canvas id="sovChart" height="200"></canvas></div>`;
+  h+=`<div class="panel"><h3 class="sub">Share of Voice</h3><div style="height:240px;position:relative"><canvas id="sovChart"></canvas></div></div>`;
   h+=`</div>`;
 
   // Menções por hora
@@ -306,7 +306,7 @@ function drawSOV(d){
   const el=document.getElementById('sovChart');if(!el)return;
   if(sovInst)sovInst.destroy();
   sovInst=new Chart(el,{type:'doughnut',data:{labels:rows.map(r=>r.a),datasets:[{data:rows.map(r=>r.v),backgroundColor:PAL,borderColor:'#1d1f24',borderWidth:3}]},
-    options:{cutout:'62%',plugins:{legend:{position:'right',labels:{color:'#edeef0',font:{size:11},boxWidth:10,boxHeight:10,usePointStyle:true,pointStyle:'circle'}}}}});
+    options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{position:'right',labels:{color:'#edeef0',font:{size:11},boxWidth:10,boxHeight:10,usePointStyle:true,pointStyle:'circle'}}}}});
 }
 function drawHora(d){
   const rows=byDate('MENCOES_HORA',d).sort((a,b)=>(a.hora||'').localeCompare(b.hora||''));
