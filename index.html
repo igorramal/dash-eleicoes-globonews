@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dash Eleições · GloboNews</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  /* graphite desaturado (sem azul) + acento unico vermelho GloboNews */
+  --bg:#15161a; --panel:#1d1f24; --panel2:#191b1f; --line:#2b2e35;
+  --txt:#edeef0; --dim:#9a9ea6; --red:#e8483d; --red-soft:#f07a72;
+  --good:#5aa87f; --bad:#d9564f; --warn:#d6a44a;
+  --mono:ui-monospace,"SF Mono",Menlo,monospace;
+  --display:"Globotipo Display",system-ui,sans-serif;
+  --text:"Globotipo Text",system-ui,sans-serif;
+  --r:12px; --r-sm:9px;
+}
+@font-face{font-family:"Globotipo Display";src:url("fonts/GlobotipoCorporativa-Bold.ttf");font-weight:700;font-display:swap;}
+@font-face{font-family:"Globotipo Display";src:url("fonts/GlobotipoCorporativa-Regular.ttf");font-weight:400;font-display:swap;}
+@font-face{font-family:"Globotipo Text";src:url("fonts/GlobotipoCorporativaTextos-Bold.ttf");font-weight:700;font-display:swap;}
+@font-face{font-family:"Globotipo Text";src:url("fonts/GlobotipoCorporativaTextos-Regular.ttf");font-weight:400;font-display:swap;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:var(--text);font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px 60px}
+header{background:var(--panel2);border-bottom:1px solid var(--line);padding:24px 0}
+header .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-bottom:0}
+.brand{display:flex;align-items:center;gap:11px}
+.brand .dot{width:10px;height:10px;background:var(--red);border-radius:50%}
+.brand h1{font-family:var(--display);font-size:21px;font-weight:700;letter-spacing:.2px}
+.brand p{color:var(--dim);font-size:11px;font-family:var(--mono);margin-top:2px}
+.controls{display:flex;align-items:center;gap:10px}
+select,button{font-family:var(--mono);font-size:12px;background:var(--panel);color:var(--txt);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 13px;cursor:pointer;transition:border-color .18s,background .18s}
+button:hover,select:hover{border-color:var(--dim)}
+.btn-pdf{background:var(--red);border-color:var(--red);color:#fff;font-weight:700}
+.btn-pdf:hover{background:var(--red-soft);border-color:var(--red-soft)}
+h2.sec{font-family:var(--display);font-size:16px;font-weight:700;color:var(--txt);margin:38px 0 16px;padding-left:11px;border-left:2px solid var(--red);letter-spacing:.2px}
+h3.sub{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin:0 0 12px;font-family:var(--mono)}
+.grid{display:grid;gap:16px}
+.g4{grid-template-columns:repeat(4,1fr)} .g3{grid-template-columns:repeat(3,1fr)} .g2{grid-template-columns:repeat(2,1fr)}
+@media(max-width:820px){.g4,.g3,.g2{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){.g4,.g3,.g2{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px}
+.card .label{color:var(--dim);font-size:10.5px;text-transform:uppercase;letter-spacing:.7px;font-family:var(--mono)}
+.card .val{font-family:var(--display);font-size:27px;font-weight:700;margin-top:8px;letter-spacing:-.2px}
+.card .delta{font-size:11px;font-family:var(--mono);margin-top:4px;color:var(--dim)}
+.up{color:var(--good)} .down{color:var(--bad)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px}
+.bar-row{display:flex;align-items:center;gap:12px;margin:9px 0;font-size:13px}
+.bar-row .nm{width:96px;color:var(--dim);flex-shrink:0}
+.bar-track{flex:1;height:8px;background:var(--panel2);border-radius:99px;overflow:hidden}
+.bar-fill{height:100%;background:var(--red);border-radius:99px;opacity:.9}
+.bar-row .vl{width:78px;text-align:right;font-family:var(--mono);font-size:12px;color:var(--txt)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+th{color:var(--dim);font-size:10.5px;text-transform:uppercase;font-family:var(--mono);letter-spacing:.6px;font-weight:400}
+td a{color:var(--red-soft);text-decoration:none} td a:hover{text-decoration:underline}
+.post{display:flex;gap:14px;padding:13px 0;border-bottom:1px solid var(--line)}
+.post:last-child{border-bottom:0}
+.post .rk{font-family:var(--display);font-size:18px;color:var(--red);width:22px;flex-shrink:0}
+.post .meta{font-family:var(--mono);font-size:11px;color:var(--dim)}
+.post .tx{font-size:13px;margin-top:3px;line-height:1.5}
+.post a.meta{color:var(--red-soft)}
+.cloud{display:flex;flex-wrap:wrap;gap:12px 16px;align-items:baseline;padding:6px 2px}
+.cloud span{color:var(--txt);line-height:1.1}
+.diag{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:640px){.diag{grid-template-columns:1fr}}
+.diag .col h4{font-family:var(--mono);font-size:11px;margin-bottom:10px;letter-spacing:.6px;text-transform:uppercase;font-weight:400}
+.diag .ok h4{color:var(--good)} .diag .no h4{color:var(--bad)}
+.item{background:var(--panel2);border:1px solid var(--line);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:9px}
+.item .t{font-weight:700;font-size:13px} .item .d{color:var(--dim);font-size:12px;margin-top:4px;line-height:1.5}
+.pill{display:inline-block;font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:20px;border:1px solid var(--line);color:var(--dim);margin-left:6px}
+.tabs{display:inline-flex;background:var(--panel2);border:1px solid var(--line);border-radius:99px;overflow:hidden;margin-bottom:14px;padding:3px}
+.tabs button{border:0;border-radius:99px;background:transparent;padding:6px 16px;color:var(--dim)}
+.tabs button.on{background:var(--red);color:#fff}
+.learn{background:var(--panel);border:1px solid var(--line);border-left:2px solid var(--red);border-radius:var(--r-sm);padding:13px 15px;margin-bottom:9px;font-size:13px;line-height:1.55}
+.note{color:var(--warn);font-family:var(--mono);font-size:11px;margin-top:8px}
+footer{color:var(--dim);font-family:var(--mono);font-size:11px;text-align:center;margin-top:52px;padding-top:20px;border-top:1px solid var(--line)}
+.banner{background:rgba(214,164,74,.08);border:1px solid rgba(214,164,74,.35);color:var(--warn);font-family:var(--mono);font-size:12px;padding:10px 15px;border-radius:var(--r-sm);margin:16px 0}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="brand"><span class="dot"></span><div>
+    <h1>Cobertura Eleições · GloboNews</h1>
+    <p id="periodo">monitoramento diário</p>
+  </div></div>
+  <div class="controls">
+    <select id="daySel" onchange="render()"></select>
+    <button class="btn-pdf" onclick="exportPDF()">Exportar PDF</button>
+  </div>
+</div></header>
+
+<div class="wrap">
+  <div id="srcBanner" class="banner" style="display:none"></div>
+  <div id="app"></div>
+  <footer>Elife · Monitoramento GloboNews Eleições · fonte: monitoramento + mídia própria</footer>
+</div>
+
+<script>
+/* ============ CONFIG: cole as URLs de CSV publicado do Google Sheet aqui ============ */
+const SHEET_URLS = {
+  TOTALS:'', PLATAFORMAS:'', TOP_POSTS:'', DIARIO:'', SOV:'', MENCOES_HORA:'',
+  NUVEM_TERMOS:'', ASSOCIACOES:'', JORNALISTAS:'', PROGRAMAS:'',
+  DIAGNOSTICO:'', PONTOS:'', APRENDIZADOS:''
+};
+/* Enquanto as URLs estiverem vazias, o dash mostra os DADOS DE EXEMPLO abaixo. */
+
+/* ============ helpers (reaproveitados do dash da Copa) ============ */
+function parseNum(s){if(s===0)return 0;if(!s||s===''||s==='—')return 0;return Number(String(s).replace(/\./g,'').replace(',','.'))||0;}
+function fmt(n){n=Number(n)||0;if(n>=1e6)return(n/1e6).toFixed(1).replace('.',',')+' mi';if(n>=1e3)return(n/1e3).toFixed(0)+' mil';return n.toLocaleString('pt-BR');}
+function safeUrl(s){let u=(s||'').trim().replace(/"/g,'');if(!u)return'';if(!/^https?:\/\//i.test(u))u='https://'+u;try{return new URL(u).href;}catch(e){return'';}}
+function esc(s){return String(s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function pct(c,p){if(!p)return null;const v=((c-p)/p)*100;return(v>=0?'+':'')+v.toFixed(0)+'%';}
+function parseCSV(text){
+  const lines=text.trim().split('\n').map(l=>l.trim()).filter(Boolean);
+  let hi=-1;
+  for(let i=0;i<Math.min(10,lines.length);i++){if(lines[i].split(',')[0].replace(/^"|"$/g,'').trim().toLowerCase()==='data'){hi=i;break;}}
+  if(hi===-1)return[];
+  const H=lines[hi].split(',').map(h=>h.trim().replace(/^"|"$/g,'').toLowerCase());
+  return lines.slice(hi+1).map(line=>{
+    const v=[];let c='',q=false;
+    for(const ch of line){if(ch==='"')q=!q;else if(ch===','&&!q){v.push(c.trim().replace(/^"|"$/g,''));c='';}else c+=ch;}
+    v.push(c.trim().replace(/^"|"$/g,''));
+    const o={};H.forEach((h,i)=>o[h]=v[i]||'');return o;
+  }).filter(r=>Object.values(r).some(x=>x!==''));
+}
+async function fetchSheet(name,url){
+  if(!url)return[name,[]];
+  const px=[url,`https://corsproxy.io/?${encodeURIComponent(url)}`,`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`];
+  for(const u of px){try{const r=await fetch(u);if(!r.ok)continue;const t=await r.text();if(t&&t.includes(','))return[name,parseCSV(t)];}catch(e){}}
+  return[name,[]];
+}
+
+/* ============ dados de exemplo (removidos automaticamente quando houver URLs) ============ */
+const SAMPLE = {
+  TOTALS:[{data:'06/08',posts:'120',interacoes:'450000',views:'3200000',alcance:'2100000'},
+          {data:'07/08',posts:'138',interacoes:'512000',views:'3600000',alcance:'2400000'}],
+  PLATAFORMAS:[
+    {data:'06/08',plataforma:'Instagram',posts:'40',interacoes:'210000'},
+    {data:'06/08',plataforma:'TikTok',posts:'25',interacoes:'120000'},
+    {data:'06/08',plataforma:'X/Twitter',posts:'35',interacoes:'60000'},
+    {data:'06/08',plataforma:'YouTube',posts:'12',interacoes:'40000'},
+    {data:'06/08',plataforma:'Facebook',posts:'8',interacoes:'20000'},
+    {data:'07/08',plataforma:'Instagram',posts:'46',interacoes:'250000'},
+    {data:'07/08',plataforma:'TikTok',posts:'30',interacoes:'150000'},
+    {data:'07/08',plataforma:'X/Twitter',posts:'38',interacoes:'70000'},
+    {data:'07/08',plataforma:'YouTube',posts:'14',interacoes:'32000'},
+    {data:'07/08',plataforma:'Facebook',posts:'10',interacoes:'10000'}],
+  TOP_POSTS:[
+    {data:'06/08',rank:'1',plataforma:'Instagram',horario:'20h15',interacoes:'85000',views:'1200000',alcance:'900000',texto:'Sabatina com o candidato na GloboNews',url:'https://instagram.com'},
+    {data:'06/08',rank:'2',plataforma:'TikTok',horario:'21h40',interacoes:'62000',views:'800000',alcance:'',texto:'Melhor momento do GloboNews Debate',url:'https://tiktok.com'},
+    {data:'06/08',rank:'3',plataforma:'X/Twitter',horario:'19h05',interacoes:'41000',views:'520000',alcance:'',texto:'Corte da pergunta da Natuza Nery sobre economia',url:'https://x.com'},
+    {data:'07/08',rank:'1',plataforma:'Instagram',horario:'20h30',interacoes:'93000',views:'1400000',alcance:'1000000',texto:'Reação ao vivo da sabatina',url:'https://instagram.com'}],
+  DIARIO:[{data:'06/08',mencoes:'48200',contas:'31000',engajamento:'210000',sentimento_pos:'42%',sentimento_neg:'18%',tts:'3'},
+          {data:'07/08',mencoes:'61500',contas:'39000',engajamento:'265000',sentimento_pos:'39%',sentimento_neg:'22%',tts:'5'}],
+  SOV:[{data:'06/08',ator:'GloboNews',percentual:'46'},{data:'06/08',ator:'CNN Brasil',percentual:'28'},{data:'06/08',ator:'Record News',percentual:'15'},{data:'06/08',ator:'Outros',percentual:'11'},
+       {data:'07/08',ator:'GloboNews',percentual:'49'},{data:'07/08',ator:'CNN Brasil',percentual:'26'},{data:'07/08',ator:'Record News',percentual:'14'},{data:'07/08',ator:'Outros',percentual:'11'}],
+  MENCOES_HORA:[{data:'06/08',hora:'16:00',volume:'1500',nota:''},{data:'06/08',hora:'18:00',volume:'2100',nota:''},{data:'06/08',hora:'20:00',volume:'8600',nota:'Pico durante a sabatina'},{data:'06/08',hora:'22:00',volume:'4300',nota:''},
+                {data:'07/08',hora:'18:00',volume:'2600',nota:''},{data:'07/08',hora:'20:00',volume:'9900',nota:'Pico no debate'},{data:'07/08',hora:'22:00',volume:'5100',nota:''}],
+  NUVEM_TERMOS:[{data:'06/08',escopo:'geral',termo:'sabatina',peso:'120'},{data:'06/08',escopo:'geral',termo:'economia',peso:'90'},{data:'06/08',escopo:'geral',termo:'debate',peso:'75'},{data:'06/08',escopo:'geral',termo:'educação',peso:'55'},{data:'06/08',escopo:'geral',termo:'segurança',peso:'48'},{data:'06/08',escopo:'geral',termo:'GloboNews',peso:'110'},{data:'06/08',escopo:'geral',termo:'candidato',peso:'70'},
+                {data:'07/08',escopo:'geral',termo:'debate',peso:'130'},{data:'07/08',escopo:'geral',termo:'proposta',peso:'80'},{data:'07/08',escopo:'geral',termo:'saúde',peso:'60'}],
+  ASSOCIACOES:[{data:'06/08',pauta:'Debate',marca:'g1',mencoes:'1800'},{data:'06/08',pauta:'Entrevistas',marca:'GloboNews',mencoes:'2400'},{data:'06/08',pauta:'Sabatina',marca:'GloboNews',mencoes:'3100'},
+               {data:'07/08',pauta:'Debate',marca:'GloboNews',mencoes:'4200'}],
+  JORNALISTAS:[{data:'06/08',jornalista:'Andréia Sadi',mencoes:'5200',sentimento:'positivo',nota:'Elogiada pela condução da sabatina'},{data:'06/08',jornalista:'Natuza Nery',mencoes:'4100',sentimento:'positivo',nota:'Destaque nas perguntas sobre economia'},{data:'06/08',jornalista:'Bela Megale',mencoes:'1500',sentimento:'neutro',nota:''},
+               {data:'07/08',jornalista:'Andréia Sadi',mencoes:'6100',sentimento:'positivo',nota:''},{data:'07/08',jornalista:'Natuza Nery',mencoes:'4800',sentimento:'positivo',nota:''}],
+  PROGRAMAS:[{data:'06/08',programa:'GloboNews Debate',mencoes:'12800',nota:'Maior volume do dia'},{data:'06/08',programa:'Central das Eleições',mencoes:'3400',nota:'Estreia 2a quinzena de agosto'},
+             {data:'07/08',programa:'GloboNews Debate',mencoes:'15200',nota:''}],
+  DIAGNOSTICO:[
+    {data:'06/08',eixo:'globonews',tipo:'funcionou',titulo:'Cobertura ao vivo da sabatina',descricao:'Transmissão simultânea puxou pico de menções às 20h'},
+    {data:'06/08',eixo:'globonews',tipo:'nao_funcionou',titulo:'Corte tardio dos melhores momentos',descricao:'Clipes só saíram no dia seguinte e perderam a janela de busca'},
+    {data:'06/08',eixo:'jornalistas',tipo:'funcionou',titulo:'Condução da Andréia Sadi',descricao:'Perguntas diretas geraram recortes espontâneos positivos'},
+    {data:'06/08',eixo:'jornalistas',tipo:'nao_funcionou',titulo:'Baixo aproveitamento de bastidores',descricao:'Conteúdo de bastidor dos âncoras rendeu pouco engajamento'},
+    {data:'07/08',eixo:'globonews',tipo:'funcionou',titulo:'Clipes durante o programa',descricao:'Publicar no intervalo segurou o pico de busca'}],
+  PONTOS:[
+    {data:'06/08',tipo:'positivo',titulo:'Boa repercussão da sabatina',descricao:'Sentimento majoritariamente positivo sobre a condução'},
+    {data:'06/08',tipo:'atencao',titulo:'Críticas sobre tempo de fala',descricao:'Reclamações de desequilíbrio no tempo entre candidatos, monitorar'},
+    {data:'07/08',tipo:'atencao',titulo:'Ataques coordenados nas redes',descricao:'Aumento de menções negativas com padrão de disparo, acompanhar'}],
+  APRENDIZADOS:[
+    {data:'06/08',eixo:'globonews',texto:'Publicar os melhores momentos ainda durante o programa segura o pico de busca.'},
+    {data:'06/08',eixo:'jornalistas',texto:'Perguntas objetivas dos âncoras geram mais recorte espontâneo que blocos longos.'},
+    {data:'07/08',eixo:'globonews',texto:'Debate rende mais no TikTok quando o corte tem menos de 30 segundos.'}]
+};
+
+/* ============ carga ============ */
+let SHEETS={}, DATES=[], USING_SAMPLE=false, diagEixo='globonews', aprEixo='globonews';
+async function load(){
+  const hasUrls=Object.values(SHEET_URLS).some(u=>u);
+  if(!hasUrls){SHEETS=SAMPLE;USING_SAMPLE=true;}
+  else{const fs=await Promise.all(Object.entries(SHEET_URLS).map(([k,u])=>fetchSheet(k,u)));SHEETS=Object.fromEntries(fs);}
+  const isDate=v=>/^\d{2}\/\d{2}$/.test((v||'').trim());
+  DATES=[...new Set([...(SHEETS.TOTALS||[]),...(SHEETS.DIARIO||[])].map(r=>r.data).filter(isDate))];
+  const sel=document.getElementById('daySel');
+  sel.innerHTML=DATES.map(d=>`<option value="${d}">${d}</option>`).join('');
+  sel.value=DATES[DATES.length-1]||'';
+  if(DATES.length){document.getElementById('periodo').textContent=`${DATES[0]} a ${DATES[DATES.length-1]}`;}
+  const b=document.getElementById('srcBanner');
+  if(USING_SAMPLE){b.style.display='block';b.innerHTML='Exibindo <b>dados de exemplo</b>. Cole as URLs do Google Sheet publicado em <code>SHEET_URLS</code> (topo do &lt;script&gt;) para usar os dados reais.';}
+  render();
+}
+const byDate=(t,d)=>(SHEETS[t]||[]).filter(r=>(r.data||'').trim()===d);
+const idx=d=>DATES.indexOf(d);
+
+/* ============ render ============ */
+function render(){
+  const d=document.getElementById('daySel').value||DATES[DATES.length-1];
+  if(!d){document.getElementById('app').innerHTML='<p style="padding:40px;color:var(--dim)">Sem dados.</p>';return;}
+  const prev=DATES[idx(d)-1];
+  const t=byDate('TOTALS',d)[0]||{}, tp=prev?byDate('TOTALS',prev)[0]||{}:{};
+  const di=byDate('DIARIO',d)[0]||{}, dp=prev?byDate('DIARIO',prev)[0]||{}:{};
+
+  let h='';
+  // Big Numbers
+  h+=`<h2 class="sec">Visão do dia · ${d}</h2>`;
+  h+=`<h3 class="sub">Mídia espontânea (monitoramento)</h3><div class="grid g4">`;
+  h+=card('Menções',parseNum(di.mencoes),parseNum(dp.mencoes));
+  h+=card('Contas alcançadas',parseNum(di.contas),parseNum(dp.contas));
+  h+=card('Engajamento',parseNum(di.engajamento),parseNum(dp.engajamento));
+  h+=cardRaw('Sentimento +/−',`${di.sentimento_pos||'—'} / ${di.sentimento_neg||'—'}`);
+  h+=`</div>`;
+  h+=`<h3 class="sub" style="margin-top:16px">Mídia própria (@GloboNews)</h3><div class="grid g4">`;
+  h+=card('Posts',parseNum(t.posts),parseNum(tp.posts));
+  h+=card('Interações',parseNum(t.interacoes),parseNum(tp.interacoes));
+  h+=card('Views',parseNum(t.views),parseNum(tp.views));
+  h+=card('Alcance',parseNum(t.alcance),parseNum(tp.alcance));
+  h+=`</div>`;
+
+  // Plataformas + SOV
+  h+=`<h2 class="sec">Distribuição</h2><div class="grid g2">`;
+  const plat=byDate('PLATAFORMAS',d);
+  const pmax=Math.max(...plat.map(r=>parseNum(r.interacoes)),1);
+  h+=`<div class="panel"><h3 class="sub">Interações por plataforma</h3>${
+    plat.sort((a,b)=>parseNum(b.interacoes)-parseNum(a.interacoes)).map(r=>
+      `<div class="bar-row"><span class="nm">${esc(r.plataforma)}</span><div class="bar-track"><div class="bar-fill" style="width:${parseNum(r.interacoes)/pmax*100}%"></div></div><span class="vl">${fmt(parseNum(r.interacoes))}</span></div>`).join('')||dim('sem dados')}</div>`;
+  h+=`<div class="panel"><h3 class="sub">Share of Voice</h3><canvas id="sovChart" height="200"></canvas></div>`;
+  h+=`</div>`;
+
+  // Menções por hora
+  h+=`<h2 class="sec">Menções por hora</h2><div class="panel"><canvas id="horaChart" height="90"></canvas>`;
+  const nota=byDate('MENCOES_HORA',d).find(r=>r.nota)?.nota;
+  if(nota)h+=`<p class="note">▲ ${esc(nota)}</p>`;
+  h+=`</div>`;
+
+  // Top posts própria
+  h+=`<h2 class="sec">Top posts · mídia própria</h2><div class="panel">${
+    byDate('TOP_POSTS',d).sort((a,b)=>Number(a.rank)-Number(b.rank)).map(r=>
+      `<div class="post"><div class="rk">${esc(r.rank)}</div><div><div class="meta">${esc(r.plataforma)} · ${esc(r.horario)} · ${fmt(parseNum(r.interacoes))} interações${r.views?' · '+fmt(parseNum(r.views))+' views':''}</div><div class="tx">${esc(r.texto)}</div>${r.url?`<a href="${safeUrl(r.url)}" target="_blank" class="meta">ver post ↗</a>`:''}</div></div>`).join('')||dim('sem dados')}</div>`;
+
+  // Jornalistas + Programas
+  h+=`<h2 class="sec">Jornalistas e programas</h2><div class="grid g2">`;
+  const jorn=byDate('JORNALISTAS',d).sort((a,b)=>parseNum(b.mencoes)-parseNum(a.mencoes));
+  const jmax=Math.max(...jorn.map(r=>parseNum(r.mencoes)),1);
+  h+=`<div class="panel"><h3 class="sub">Menções por jornalista</h3>${
+    jorn.map(r=>`<div class="bar-row"><span class="nm" style="width:120px">${esc(r.jornalista)}</span><div class="bar-track"><div class="bar-fill" style="width:${parseNum(r.mencoes)/jmax*100}%"></div></div><span class="vl">${fmt(parseNum(r.mencoes))}</span></div>${r.nota?`<div class="meta" style="margin:-2px 0 6px 120px;font-family:var(--mono);font-size:11px;color:var(--dim)">${esc(r.nota)}</div>`:''}`).join('')||dim('sem dados')}</div>`;
+  h+=`<div class="panel"><h3 class="sub">Repercussão de programas</h3><table><tr><th>Programa</th><th>Menções</th></tr>${
+    byDate('PROGRAMAS',d).sort((a,b)=>parseNum(b.mencoes)-parseNum(a.mencoes)).map(r=>
+      `<tr><td>${esc(r.programa)}${r.nota?`<div class="meta" style="font-size:11px;color:var(--dim)">${esc(r.nota)}</div>`:''}</td><td style="font-family:var(--mono)">${fmt(parseNum(r.mencoes))}</td></tr>`).join('')||'<tr><td colspan=2>'+dim('sem dados')+'</td></tr>'}</table></div>`;
+  h+=`</div>`;
+
+  // Nuvem de termos + associações
+  h+=`<h2 class="sec">Termos e associações</h2><div class="grid g2">`;
+  const termos=byDate('NUVEM_TERMOS',d).filter(r=>(r.escopo||'geral').toLowerCase()==='geral');
+  const tmax=Math.max(...termos.map(r=>parseNum(r.peso)),1);
+  h+=`<div class="panel"><h3 class="sub">Nuvem de termos</h3><div class="cloud">${
+    termos.sort((a,b)=>parseNum(b.peso)-parseNum(a.peso)).map(r=>{const s=13+parseNum(r.peso)/tmax*26;const rr=parseNum(r.peso)/tmax;const c=rr>0.6?'var(--red)':rr>0.3?'var(--red-soft)':'var(--dim)';return `<span style="font-size:${s}px;color:${c};font-weight:${s>28?700:400};font-family:var(--display)">${esc(r.termo)}</span>`;}).join('')||dim('sem dados')}</div></div>`;
+  h+=`<div class="panel"><h3 class="sub">Associação pauta × marca</h3><table><tr><th>Pauta</th><th>Marca</th><th>Menções</th></tr>${
+    byDate('ASSOCIACOES',d).sort((a,b)=>parseNum(b.mencoes)-parseNum(a.mencoes)).map(r=>
+      `<tr><td>${esc(r.pauta)}</td><td>${esc(r.marca)}</td><td style="font-family:var(--mono)">${fmt(parseNum(r.mencoes))}</td></tr>`).join('')||'<tr><td colspan=3>'+dim('sem dados')+'</td></tr>'}</table></div>`;
+  h+=`</div>`;
+
+  // Diagnóstico (2 eixos)
+  h+=`<h2 class="sec">Diagnóstico do dia</h2>`;
+  h+=`<div class="tabs">${['globonews','jornalistas'].map(e=>`<button class="${diagEixo===e?'on':''}" onclick="diagEixo='${e}';render()">${e==='globonews'?'GloboNews':'Jornalistas'}</button>`).join('')}</div>`;
+  const fz=byDate('DIAGNOSTICO',d).filter(r=>r.eixo===diagEixo);
+  h+=`<div class="diag"><div class="col ok"><h4>✔ O que funcionou</h4>${
+    fz.filter(r=>r.tipo==='funcionou').map(it=>`<div class="item"><div class="t">${esc(it.titulo)}</div><div class="d">${esc(it.descricao)}</div></div>`).join('')||dim('—')}</div>`;
+  h+=`<div class="col no"><h4>✘ O que não funcionou</h4>${
+    fz.filter(r=>r.tipo==='nao_funcionou').map(it=>`<div class="item"><div class="t">${esc(it.titulo)}</div><div class="d">${esc(it.descricao)}</div></div>`).join('')||dim('—')}</div></div>`;
+
+  // Pontos de atenção / crises
+  h+=`<h2 class="sec">Pontos de atenção e crises</h2><div class="grid g2">`;
+  const pos=byDate('PONTOS',d).filter(r=>r.tipo==='positivo'), at=byDate('PONTOS',d).filter(r=>r.tipo==='atencao');
+  h+=`<div class="panel"><h3 class="sub" style="color:var(--good)">Positivos</h3>${pos.map(it=>`<div class="item"><div class="t">${esc(it.titulo)}</div><div class="d">${esc(it.descricao)}</div></div>`).join('')||dim('—')}</div>`;
+  h+=`<div class="panel"><h3 class="sub" style="color:var(--warn)">Atenção / crise</h3>${at.map(it=>`<div class="item" style="border-color:var(--warn)"><div class="t">${esc(it.titulo)}</div><div class="d">${esc(it.descricao)}</div></div>`).join('')||dim('—')}</div>`;
+  h+=`</div>`;
+
+  // Aprendizados (2 eixos)
+  h+=`<h2 class="sec">Aprendizados</h2>`;
+  h+=`<div class="tabs">${['globonews','jornalistas'].map(e=>`<button class="${aprEixo===e?'on':''}" onclick="aprEixo='${e}';render()">${e==='globonews'?'GloboNews':'Jornalistas'}</button>`).join('')}</div>`;
+  h+=byDate('APRENDIZADOS',d).filter(r=>r.eixo===aprEixo).map(r=>`<div class="learn">${esc(r.texto)}</div>`).join('')||dim('—');
+
+  document.getElementById('app').innerHTML=h;
+  drawSOV(d); drawHora(d);
+}
+function card(label,v,pv){const dl=pct(v,pv);return `<div class="card"><p class="label">${label}</p><p class="val">${fmt(v)}</p>${dl?`<p class="delta ${dl.startsWith('-')?'down':'up'}">${dl} vs. dia anterior</p>`:''}</div>`;}
+function cardRaw(label,v){return `<div class="card"><p class="label">${label}</p><p class="val" style="font-size:20px">${esc(v)}</p></div>`;}
+function dim(t){return `<p style="color:var(--dim);font-size:13px;padding:6px 0">${t}</p>`;}
+
+let sovInst,horaInst;
+const PAL=['#e8483d','#8a8f98','#d6a44a','#5aa87f','#b56a5e','#6b7078','#c9a24a'];
+function drawSOV(d){
+  const rows=byDate('SOV',d).map(r=>({a:r.ator,v:parseNum(r.percentual)})).filter(r=>r.a);
+  const el=document.getElementById('sovChart');if(!el)return;
+  if(sovInst)sovInst.destroy();
+  sovInst=new Chart(el,{type:'doughnut',data:{labels:rows.map(r=>r.a),datasets:[{data:rows.map(r=>r.v),backgroundColor:PAL,borderColor:'#1d1f24',borderWidth:3}]},
+    options:{cutout:'62%',plugins:{legend:{position:'right',labels:{color:'#edeef0',font:{size:11},boxWidth:10,boxHeight:10,usePointStyle:true,pointStyle:'circle'}}}}});
+}
+function drawHora(d){
+  const rows=byDate('MENCOES_HORA',d).sort((a,b)=>(a.hora||'').localeCompare(b.hora||''));
+  const el=document.getElementById('horaChart');if(!el)return;
+  if(horaInst)horaInst.destroy();
+  horaInst=new Chart(el,{type:'line',data:{labels:rows.map(r=>r.hora),datasets:[{data:rows.map(r=>parseNum(r.volume)),borderColor:'#e8483d',backgroundColor:'rgba(232,72,61,.12)',fill:true,tension:.35,pointRadius:2.5,pointBackgroundColor:'#e8483d'}]},
+    options:{plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#9a9ea6',font:{size:10}},grid:{color:'#2b2e35'}},y:{ticks:{color:'#9a9ea6',font:{size:10}},grid:{color:'#2b2e35'}}}}});
+}
+
+async function exportPDF(){
+  const {jsPDF}=window.jspdf;
+  const el=document.querySelector('.wrap');
+  const cv=await html2canvas(el,{backgroundColor:'#15161a',scale:2});
+  const pdf=new jsPDF('p','mm','a4');
+  const w=210,h=cv.height*w/cv.width;
+  let pos=0,ph=297;
+  pdf.addImage(cv,'PNG',0,pos,w,h);
+  let left=h-ph;
+  while(left>0){pos-=ph;pdf.addPage();pdf.addImage(cv,'PNG',0,pos,w,h);left-=ph;}
+  pdf.save(`dash_eleicoes_${document.getElementById('daySel').value.replace('/','-')}.pdf`);
+}
+
+load();
+</script>
+</body>
+</html>
