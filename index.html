@@ -101,13 +101,17 @@ footer{color:var(--dim);font-family:var(--mono);font-size:11px;text-align:center
 </div>
 
 <script>
-/* ============ CONFIG: cole as URLs de CSV publicado do Google Sheet aqui ============ */
-const SHEET_URLS = {
-  TOTALS:'', PLATAFORMAS:'', TOP_POSTS:'', DIARIO:'', SOV:'', MENCOES_HORA:'',
-  NUVEM_TERMOS:'', ASSOCIACOES:'', JORNALISTAS:'', PROGRAMAS:'',
-  DIAGNOSTICO:'', PONTOS:'', APRENDIZADOS:''
-};
-/* Enquanto as URLs estiverem vazias, o dash mostra os DADOS DE EXEMPLO abaixo. */
+/* ============ CONFIG: cole aqui o ID do Google Sheet ============
+   O ID é a parte da URL entre /d/ e /edit:
+   https://docs.google.com/spreadsheets/d/[ESTE_PEDACO]/edit
+   A planilha precisa estar compartilhada como "Qualquer pessoa com o link: Leitor".
+   As abas devem ter EXATAMENTE os nomes da lista TABS abaixo.
+   Enquanto o SHEET_ID estiver vazio, o dash mostra os DADOS DE EXEMPLO. */
+const SHEET_ID = '';
+const TABS = ['TOTALS','PLATAFORMAS','TOP_POSTS','DIARIO','SOV','MENCOES_HORA',
+  'NUVEM_TERMOS','ASSOCIACOES','JORNALISTAS','PROGRAMAS','DIAGNOSTICO','PONTOS','APRENDIZADOS'];
+const SHEET_URLS = Object.fromEntries(TABS.map(t => [t,
+  SHEET_ID ? `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(t)}` : '']));
 
 /* ============ helpers (reaproveitados do dash da Copa) ============ */
 function parseNum(s){if(s===0)return 0;if(!s||s===''||s==='—')return 0;return Number(String(s).replace(/\./g,'').replace(',','.'))||0;}
