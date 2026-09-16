@@ -108,7 +108,7 @@ footer{color:var(--dim);font-family:var(--mono);font-size:11px;text-align:center
    As abas devem ter EXATAMENTE os nomes da lista TABS abaixo.
    Enquanto o SHEET_ID estiver vazio, o dash mostra os DADOS DE EXEMPLO. */
 const SHEET_ID = '1jGJ4yrTFGSrsTpyw98Gb2WUonYvC-FeYrgjXgPRLQX8';
-const TABS = ['TOTALS','PLATAFORMAS','TOP_POSTS','DIARIO','SOV','MENCOES_HORA',
+const TABS = ['TOTALS','PLATAFORMAS','TOP_POSTS','DIARIO','REDES_ESPONTANEA','SOV','MENCOES_HORA',
   'NUVEM_TERMOS','ASSOCIACOES','JORNALISTAS','PROGRAMAS','DIAGNOSTICO','PONTOS','APRENDIZADOS'];
 const SHEET_URLS = Object.fromEntries(TABS.map(t => [t,
   SHEET_ID ? `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(t)}` : '']));
@@ -161,6 +161,8 @@ const SAMPLE = {
     {data:'07/08',rank:'1',plataforma:'Instagram',horario:'20h30',interacoes:'93000',views:'1400000',alcance:'1000000',texto:'Reação ao vivo da sabatina',url:'https://instagram.com'}],
   DIARIO:[{data:'06/08',mencoes:'48200',contas:'31000',engajamento:'210000',sentimento_pos:'42%',sentimento_neg:'18%',tts:'3'},
           {data:'07/08',mencoes:'61500',contas:'39000',engajamento:'265000',sentimento_pos:'39%',sentimento_neg:'22%',tts:'5'}],
+  REDES_ESPONTANEA:[{data:'06/08',rede:'X/Twitter',mencoes:'26000'},{data:'06/08',rede:'Instagram',mencoes:'12400'},{data:'06/08',rede:'TikTok',mencoes:'6100'},{data:'06/08',rede:'Facebook',mencoes:'2500'},{data:'06/08',rede:'YouTube',mencoes:'1200'},
+                    {data:'07/08',rede:'X/Twitter',mencoes:'33000'},{data:'07/08',rede:'Instagram',mencoes:'15800'},{data:'07/08',rede:'TikTok',mencoes:'8200'},{data:'07/08',rede:'Facebook',mencoes:'3100'},{data:'07/08',rede:'YouTube',mencoes:'1400'}],
   SOV:[{data:'06/08',ator:'GloboNews',percentual:'46'},{data:'06/08',ator:'CNN Brasil',percentual:'28'},{data:'06/08',ator:'Record News',percentual:'15'},{data:'06/08',ator:'Outros',percentual:'11'},
        {data:'07/08',ator:'GloboNews',percentual:'49'},{data:'07/08',ator:'CNN Brasil',percentual:'26'},{data:'07/08',ator:'Record News',percentual:'14'},{data:'07/08',ator:'Outros',percentual:'11'}],
   MENCOES_HORA:[{data:'06/08',hora:'16:00',volume:'1500',nota:''},{data:'06/08',hora:'18:00',volume:'2100',nota:''},{data:'06/08',hora:'20:00',volume:'8600',nota:'Pico durante a sabatina'},{data:'06/08',hora:'22:00',volume:'4300',nota:''},
@@ -225,6 +227,7 @@ function render(){
   h+=card('Engajamento',parseNum(di.engajamento),parseNum(dp.engajamento));
   h+=cardRaw('Sentimento +/−',`${di.sentimento_pos||'—'} / ${di.sentimento_neg||'—'}`);
   h+=`</div>`;
+  h+=`<div class="panel" style="margin-top:16px"><h3 class="sub">Menções por rede</h3>${bars(byDate('REDES_ESPONTANEA',d),'rede','mencoes','sem dados · preencher a aba REDES_ESPONTANEA (data, rede, mencoes)')}</div>`;
   h+=`<h3 class="sub" style="margin-top:16px">Mídia própria (TV Globo, GloboNews e G1)</h3><div class="grid g4">`;
   h+=card('Posts',parseNum(t.posts),parseNum(tp.posts));
   h+=card('Interações',parseNum(t.interacoes),parseNum(tp.interacoes));
@@ -234,11 +237,7 @@ function render(){
 
   // Plataformas + SOV
   h+=`<h2 class="sec">Distribuição</h2><div class="grid g2">`;
-  const plat=byDate('PLATAFORMAS',d);
-  const pmax=Math.max(...plat.map(r=>parseNum(r.interacoes)),1);
-  h+=`<div class="panel"><h3 class="sub">Interações por plataforma</h3>${
-    plat.sort((a,b)=>parseNum(b.interacoes)-parseNum(a.interacoes)).map(r=>
-      `<div class="bar-row"><span class="nm">${esc(r.plataforma)}</span><div class="bar-track"><div class="bar-fill" style="width:${parseNum(r.interacoes)/pmax*100}%"></div></div><span class="vl">${fmt(parseNum(r.interacoes))}</span></div>`).join('')||dim('sem dados')}</div>`;
+  h+=`<div class="panel"><h3 class="sub">Interações por plataforma</h3>${bars(byDate('PLATAFORMAS',d),'plataforma','interacoes')}</div>`;
   h+=`<div class="panel"><h3 class="sub">Share of Voice</h3><div style="height:240px;position:relative"><canvas id="sovChart"></canvas></div></div>`;
   h+=`</div>`;
 
@@ -277,7 +276,7 @@ function render(){
 
   // Diagnóstico (2 eixos)
   h+=`<h2 class="sec">Diagnóstico do dia</h2>`;
-  h+=`<div class="tabs">${['globonews','jornalistas'].map(e=>`<button class="${diagEixo===e?'on':''}" onclick="diagEixo='${e}';render()">${e==='globonews'?'GloboNews':'Jornalistas'}</button>`).join('')}</div>`;
+  h+=`<div class="tabs">${['globonews','jornalistas'].map(e=>`<button class="${diagEixo===e?'on':''}" onclick="diagEixo='${e}';render()">${e==='globonews'?'Produtos Globo':'Jornalistas'}</button>`).join('')}</div>`;
   const fz=byDate('DIAGNOSTICO',d).filter(r=>r.eixo===diagEixo);
   h+=`<div class="diag"><div class="col ok"><h4>✔ O que funcionou</h4>${
     fz.filter(r=>r.tipo==='funcionou').map(it=>`<div class="item"><div class="t">${esc(it.titulo)}</div><div class="d">${esc(it.descricao)}</div></div>`).join('')||dim('—')}</div>`;
@@ -293,7 +292,7 @@ function render(){
 
   // Aprendizados (2 eixos)
   h+=`<h2 class="sec">Aprendizados</h2>`;
-  h+=`<div class="tabs">${['globonews','jornalistas'].map(e=>`<button class="${aprEixo===e?'on':''}" onclick="aprEixo='${e}';render()">${e==='globonews'?'GloboNews':'Jornalistas'}</button>`).join('')}</div>`;
+  h+=`<div class="tabs">${['globonews','jornalistas'].map(e=>`<button class="${aprEixo===e?'on':''}" onclick="aprEixo='${e}';render()">${e==='globonews'?'Produtos Globo':'Jornalistas'}</button>`).join('')}</div>`;
   h+=byDate('APRENDIZADOS',d).filter(r=>r.eixo===aprEixo).map(r=>`<div class="learn">${esc(r.texto)}</div>`).join('')||dim('—');
 
   document.getElementById('app').innerHTML=h;
@@ -302,14 +301,25 @@ function render(){
 function card(label,v,pv){const dl=pct(v,pv);return `<div class="card"><p class="label">${label}</p><p class="val">${fmt(v)}</p>${dl?`<p class="delta ${dl.startsWith('-')?'down':'up'}">${dl} vs. dia anterior</p>`:''}</div>`;}
 function cardRaw(label,v){return `<div class="card"><p class="label">${label}</p><p class="val" style="font-size:20px">${esc(v)}</p></div>`;}
 function dim(t){return `<p style="color:var(--dim);font-size:13px;padding:6px 0">${t}</p>`;}
+function bars(rows,nameKey,valKey,empty='sem dados'){
+  const max=Math.max(...rows.map(r=>parseNum(r[valKey])),1);
+  return rows.sort((a,b)=>parseNum(b[valKey])-parseNum(a[valKey])).map(r=>
+    `<div class="bar-row"><span class="nm">${esc(r[nameKey])}</span><div class="bar-track"><div class="bar-fill" style="width:${parseNum(r[valKey])/max*100}%"></div></div><span class="vl">${fmt(parseNum(r[valKey]))}</span></div>`).join('')||dim(empty);
+}
 
 let sovInst,horaInst;
-const PAL=['#e8483d','#8a8f98','#d6a44a','#5aa87f','#b56a5e','#6b7078','#c9a24a'];
+/* cor fixa por ator do SOV; chave = nome sem acento/espaço/caixa. Aliases cobrem variações da planilha. */
+const SOV_COLORS={globonews:'#e8483d',globo:'#f28c28',g1:'#d6a44a',cnnbrasil:'#4f8fd9',cnn:'#4f8fd9',metropoles:'#9b6bd6',
+  bandnews:'#2fb8c9',band:'#2fb8c9',folha:'#5aa87f',jovempan:'#c95aa0',estadao:'#7aa0c4',outros:'#6b7078'};
+const PAL=['#e07b39','#8a8f98','#3fa9a2','#b56a5e','#c9a24a','#6aa1d8','#a8a0c8'];
+const normKey=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
 function drawSOV(d){
   const rows=byDate('SOV',d).map(r=>({a:r.ator,v:parseNum(r.percentual)})).filter(r=>r.a);
   const el=document.getElementById('sovChart');if(!el)return;
   if(sovInst)sovInst.destroy();
-  sovInst=new Chart(el,{type:'doughnut',data:{labels:rows.map(r=>r.a),datasets:[{data:rows.map(r=>r.v),backgroundColor:PAL,borderColor:'#1d1f24',borderWidth:3}]},
+  let extra=0;
+  const colors=rows.map(r=>SOV_COLORS[normKey(r.a)]||PAL[extra++%PAL.length]);
+  sovInst=new Chart(el,{type:'doughnut',data:{labels:rows.map(r=>r.a),datasets:[{data:rows.map(r=>r.v),backgroundColor:colors,borderColor:'#1d1f24',borderWidth:3}]},
     options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{position:'right',labels:{color:'#edeef0',font:{size:11},boxWidth:10,boxHeight:10,usePointStyle:true,pointStyle:'circle'}}}}});
 }
 function drawHora(d){
