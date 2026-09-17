@@ -330,56 +330,19 @@ function drawHora(d){
     options:{plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#9a9ea6',font:{size:10}},grid:{color:'#2b2e35'}},y:{ticks:{color:'#9a9ea6',font:{size:10}},grid:{color:'#2b2e35'}}}}});
 }
 
-/* ===== PDF: captura o body uma vez e fatia em paginas A4 sem cortar secao no meio ===== */
-const PDF_BG='#15161a', PDF_GAP=24; // gap = respiro (css px) acima da secao que abre a pagina
-function pdfBlocks(){
-  // blocos que nao podem ser cortados: header, banner, cada secao (h2.sec + conteudo), footer
-  const box=el=>{const r=el.getBoundingClientRect();return{top:r.top+scrollY,bottom:r.bottom+scrollY};};
-  const blocks=[box(document.querySelector('header'))];
-  const banner=document.getElementById('srcBanner');
-  if(banner.style.display!=='none')blocks.push(box(banner));
-  let cur=null;
-  for(const el of document.getElementById('app').children){
-    const b=box(el);
-    if(!cur||el.matches('h2.sec')){cur=b;blocks.push(cur);}
-    else cur.bottom=Math.max(cur.bottom,b.bottom);
-  }
-  blocks.push(box(document.querySelector('footer')));
-  return blocks;
-}
-function pdfPages(blocks,pageH){
-  // guloso: empilha blocos ate estourar a pagina; bloco maior que a pagina e cortado na forca
-  const pages=[];let start=blocks[0].top;
-  for(const b of blocks){
-    if(b.bottom-start<=pageH)continue;
-    const cut=b.top-PDF_GAP;
-    if(cut>start){pages.push([start,cut]);start=cut;}
-    while(b.bottom-start>pageH){pages.push([start,start+pageH]);start+=pageH;}
-  }
-  pages.push([start,blocks[blocks.length-1].bottom]);
-  return pages;
-}
+/* ===== PDF: pagina unica, altura igual a do dash (estilo captura de tela inteira) ===== */
+const PDF_BG='#15161a', PDF_W=1280, PDF_MAX=5080;
 async function exportPDF(){
   const btn=document.querySelector('.btn-pdf'),label=btn.textContent;
   btn.disabled=true;btn.textContent='Gerando PDF…';
   try{
     const {jsPDF}=window.jspdf;
-    const cssW=document.documentElement.clientWidth;
-    const cv=await html2canvas(document.body,{backgroundColor:PDF_BG,scale:2,windowWidth:cssW});
-    const k=cv.width/cssW;            // canvas px por css px
-    const pageH=297*(cssW/210);       // altura util da pagina A4 em css px
-    const pages=pdfPages(pdfBlocks(),pageH);
-    const pdf=new jsPDF('p','mm','a4');
-    pages.forEach(([y0,y1],i)=>{
-      const slice=document.createElement('canvas');
-      slice.width=cv.width;slice.height=Math.round(pageH*k);
-      const ctx=slice.getContext('2d');
-      ctx.fillStyle=PDF_BG;ctx.fillRect(0,0,slice.width,slice.height); // pagina inteira escura, sem sobra branca
-      const h=Math.round((y1-y0)*k);
-      ctx.drawImage(cv,0,Math.round(y0*k),cv.width,h,0,0,cv.width,h);
-      if(i)pdf.addPage();
-      pdf.addImage(slice.toDataURL('image/jpeg',.9),'JPEG',0,0,210,297);
-    });
+    // layout fixo de 1280px: PDF sai igual em qualquer tamanho de janela
+    const cv=await html2canvas(document.body,{backgroundColor:PDF_BG,scale:2,width:PDF_W,windowWidth:PDF_W});
+    let W=210,H=cv.height*W/cv.width;
+    if(H>PDF_MAX){W=W*PDF_MAX/H;H=PDF_MAX;} // teto do PDF (5080mm): encolhe em vez de cortar
+    const pdf=new jsPDF({orientation:'p',unit:'mm',format:[W,H]});
+    pdf.addImage(cv.toDataURL('image/jpeg',.9),'JPEG',0,0,W,H);
     pdf.save(`dash_eleicoes_${document.getElementById('daySel').value.replace('/','-')}.pdf`);
   }catch(e){
     console.error('exportPDF',e);alert('Não foi possível gerar o PDF. Tente novamente.');
